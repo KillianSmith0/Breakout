@@ -19,6 +19,7 @@
 		3337E2151EA042F800C9A679 /* BreakoutVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337E2141EA042F800C9A679 /* BreakoutVC.swift */; };
 		3337E2171EA770A100C9A679 /* PaddleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337E2161EA770A100C9A679 /* PaddleView.swift */; };
 		3337E2191EA7A57700C9A679 /* BlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337E2181EA7A57700C9A679 /* BlockView.swift */; };
+		33523B511EAA984D00D3B68D /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33523B501EAA984D00D3B68D /* Settings.swift */; };
 		33E65A291EA825E6001940FD /* BallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33E65A281EA825E6001940FD /* BallView.swift */; };
 /* End PBXBuildFile section */
 
@@ -58,6 +59,7 @@
 		3337E2141EA042F800C9A679 /* BreakoutVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BreakoutVC.swift; sourceTree = "<group>"; };
 		3337E2161EA770A100C9A679 /* PaddleView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PaddleView.swift; sourceTree = "<group>"; };
 		3337E2181EA7A57700C9A679 /* BlockView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
+		33523B501EAA984D00D3B68D /* Settings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		33E65A281EA825E6001940FD /* BallView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BallView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -113,6 +115,7 @@
 				3337E1D21E9FF9E400C9A679 /* Main.storyboard */,
 				3337E1FE1E9FFAE500C9A679 /* BreakoutBehavior.swift */,
 				3337E2141EA042F800C9A679 /* BreakoutVC.swift */,
+				33523B501EAA984D00D3B68D /* Settings.swift */,
 				33E65A281EA825E6001940FD /* BallView.swift */,
 				3337E2181EA7A57700C9A679 /* BlockView.swift */,
 				3337E2161EA770A100C9A679 /* PaddleView.swift */,
@@ -211,6 +214,7 @@
 				TargetAttributes = {
 					3337E1CA1E9FF9E400C9A679 = {
 						CreatedOnToolsVersion = 8.2.1;
+						DevelopmentTeam = U4Y2P4R9H3;
 						ProvisioningStyle = Automatic;
 					};
 					3337E1DE1E9FF9E400C9A679 = {
@@ -283,6 +287,7 @@
 				3337E2031E9FFDFC00C9A679 /* GameView.swift in Sources */,
 				3337E2191EA7A57700C9A679 /* BlockView.swift in Sources */,
 				3337E2171EA770A100C9A679 /* PaddleView.swift in Sources */,
+				33523B511EAA984D00D3B68D /* Settings.swift in Sources */,
 				3337E2151EA042F800C9A679 /* BreakoutVC.swift in Sources */,
 				33E65A291EA825E6001940FD /* BallView.swift in Sources */,
 			);
@@ -434,6 +439,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = U4Y2P4R9H3;
 				INFOPLIST_FILE = Breakout_V1/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "ie.ucd.cs.Breakout-V1";
@@ -446,6 +452,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = U4Y2P4R9H3;
 				INFOPLIST_FILE = Breakout_V1/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "ie.ucd.cs.Breakout-V1";

@@ -24,13 +24,14 @@ class BlockView: UIView {
         fatalError("init(coder:) not implemented")
     }
     
+    var identifier: String!
+    
     var size: CGSize!
     
     var position: CGPoint! {    // Optional
         didSet{
             self.frame.origin.x = position.x
             self.frame.origin.y = position.y
-            
             print("Paddle pos: \(self.position!)")
         }
     }

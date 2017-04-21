@@ -16,81 +16,85 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     }
     
     struct GameSettings {
-        static let NumberOfBlocks: Int = 25
-        static let NumberOfBalls: Int = 5
+        static let NumberOfBlocks: Int = 35
+        static let NumberOfBalls: Int = 2
         static let BallSpeed: Double = 20.0
     }
-    private var tapCount: Int = 0
     
-    private var balls: [BallView] = [BallView]()
+    private var tapCount: Int = 0 {
+        didSet{
+            if tapCount == 1 {
+                gameView.breakoutBehavior.shootBalls([BallView](balls.values))
+                startLabel.isHidden = true
+                endGame = false
+            }
+        }
+    }
     
-    private var blocks: [BlockView]! = [BlockView]()
+    // Game Attributes
+    private var highScore: Int = 0 {
+        didSet{ highScoreLabel.text! = String(highScore)}
+    }
     
+    private var score: Int = 0 {
+        didSet{
+            scoreLabel.text = String(score)
+            let oldHighScore = UserDefaults.standard.integer(forKey: "highestScore")
+            if score > oldHighScore {
+                highScore = score
+                UserDefaults.standard.setValue(highScore, forKey: "highestScore")
+                UserDefaults.standard.synchronize()
+            }
+        }
+    }
+    private var endGame: Bool = false
+    private var blocksLeft: Int = GameSettings.NumberOfBlocks {
+        didSet{ if blocksLeft == 0 { gameOver() }}
+    }
+    
+    private var lives: Int = GameSettings.NumberOfBalls {
+        didSet{ if lives == 0 { gameOver() }}
+    }
+    
+    
+    // Game Objects
+    private var balls: [String: BallView] = [String: BallView]()
+    private var blocks: [String: BlockView]! = [String: BlockView]()
     private var paddle: PaddleView!
     
+    // Text Labels
+    
+    @IBOutlet weak var highScoreLabel: UILabel!
     @IBOutlet weak var scoreLabel: UILabel!
+    @IBOutlet weak var startLabel: UILabel!
     
     @IBOutlet weak var gameView: GameView!
-    
-    var breakoutBehavior = BreakoutBehavior()
-    
-    private lazy var animator: UIDynamicAnimator = {
-        let animator = UIDynamicAnimator(referenceView: self.gameView)
-        animator.addBehavior(self.breakoutBehavior)
-        return animator
-    }()
-    
+
+        
     override func viewDidLoad() {
         super.viewDidLoad()
-        animator.delegate = self
-
-        // Make the paddle
-        let paddleX = gameView.bounds.size.width/2 - Constants.PaddleSize.width/2
-        let paddleY = gameView.bounds.size.height * (3/4)
-        paddle = PaddleView(frame: CGRect(origin: CGPoint(x: paddleX, y: paddleY), size: Constants.PaddleSize))
-        paddle.position = CGPoint(x: paddleX, y: paddleY)
-
-        // Generate the balls
-        for i in 0..<GameSettings.NumberOfBalls {
-            let ballX: CGFloat = paddle.position.x + (Constants.BallSize.width/4) + (Constants.PaddleSize.width * (CGFloat(i)/CGFloat(GameSettings.NumberOfBalls)))
-            let ballY: CGFloat = paddle.position.y - Constants.BallSize.height
-            let ball = BallView(frame: CGRect(origin: CGPoint(x: ballX, y: ballY), size: Constants.BallSize))
-            balls.append(ball)
-        }
-        
-        // Generate the blocks
-        makeBlocks(numberOfBlocks: GameSettings.NumberOfBlocks)
-        
-        // Add views to the gameview and the behaviors
-        gameView.addSubview(paddle)
-        gameView.addSubviews(balls)
-        gameView.addSubviews(blocks)
-        
-        breakoutBehavior.addPaddle(paddle)
+        gameView.breakoutBehavior.setCollisionDelegate(delegate: self)
+        gameView.animator.delegate = self
+        prepareGame()
     }
-    //@IBAction func startGame(TAPGesture){ }
     
-    @IBAction func insertBall(_ sender: UITapGestureRecognizer) {
-        let x = gameView.bounds.size.width * CGFloat(arc4random()) / CGFloat(RAND_MAX) // drops ball down at random x
-        makeBalls(numberOfBalls: GameSettings.NumberOfBalls,x: x, y: 0.0 as CGFloat)
-        print("\(sender.location(in: self.gameView))")
-        
-        if tapCount < 1 {
-            for ball in balls {
-                breakoutBehavior.addView(ball)
-            }
-            print("BallBehaviors added")
-
-        }
+    // Launches the ball after1, if the game has ended, checks before restart
+    @IBAction func startGame(_ sender: UITapGestureRecognizer) {
         tapCount += 1
+        
+        if endGame == true { // & tapped screen then restart game
+            print("Reset GAME")
+            resetGame()
+        }
     }
+    
     
     @IBAction func movePaddle(_ sender: UIPanGestureRecognizer) {
         if(sender.state == .began || sender.state == .changed) {
             let translation = sender.translation(in: self.paddle)
             
             paddle.position = CGPoint(x: paddle.position.x + translation.x, y: paddle.position.y)
-            breakoutBehavior.paddleMoved(paddle)
+            gameView.breakoutBehavior.paddleMoved(paddle)
             sender.setTranslation(CGPoint.zero, in: self.gameView)
             
             if(paddle.frame.minX < 0){
@@ -103,7 +107,17 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         }
     }
     
-    private func makeBlocks(numberOfBlocks: Int){
+    
+    // MARK: - Methods that create the different type of views
+    
+    private func makePaddle(){
+        paddle = PaddleView(frame: CGRect(origin: CGPoint(x: gameView.bounds.size.width/2 - Constants.PaddleSize.width/2, y: gameView.bounds.size.height * (3/4)), size: Constants.PaddleSize))
+        
+        gameView.breakoutBehavior.addBound(view: paddle, name: "Paddle")
+        gameView.addSubview(paddle)
+    }
+    
+    private func makeBlocks(_ numberOfBlocks: Int){
         let spacing: CGFloat = 2.0
         let totalSpacing: CGFloat = spacing * 5 + 2
         let blockWidth: CGFloat = (gameView.bounds.width-totalSpacing)/5
@@ -111,26 +125,134 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         
         let blockHeight: CGFloat = 20.0
         let ySpacing: CGFloat = blockHeight + 2.0
-       
-        for i in 1...numberOfBlocks/5{
+        
+        for i in 1..<numberOfBlocks/5{
             for j in 0...4{
                 let y: CGFloat = spacing + (ySpacing * CGFloat(i))
                 let x: CGFloat = spacing + (xSpacing * CGFloat(j))
-
                 let block = BlockView(frame: CGRect(origin: CGPoint(x: x, y: y), size: CGSize(width: blockWidth, height: blockHeight)))
-                blocks.append(block)
+                
+                let blockID: String = "Block\(i)\(j)"
+                gameView.breakoutBehavior.addBound(view: block, name: blockID)
+                blocks[blockID] = block
+                
+                gameView.addSubview(block)
             }
         }
     }
     
-    private func makeBalls(numberOfBalls: Int, x: CGFloat, y: CGFloat){
-        let ballView = BallView(frame: CGRect(origin: CGPoint(x: x, y: y), size: Constants.BallSize))
+    private func makeBalls(_ numberOfBalls: Int){
+        for i in 0..<numberOfBalls {
+            let ballX: CGFloat = paddle.position.x + (Constants.BallSize.width/4) + (paddle.size.width * (CGFloat(i)/CGFloat(GameSettings.NumberOfBalls)))
+            let ballY: CGFloat = paddle.position.y - Constants.BallSize.height
+            let ballID: String = "Ball\(i)"
+            let ball = BallView(frame: CGRect(origin: CGPoint(x: ballX, y: ballY), size: Constants.BallSize))
+            balls[ballID] = ball
+            
+            gameView.addSubview(ball)
+        }
+    }
+    
+    
+    // MARK: - Methods that deal with collision checks
+    
+    private func checkBallDied (boundaryID: String, ball: BallView) {
+        if boundaryID == "Floor" {
+            gameView.breakoutBehavior.removeView(ball)
+            ball.isHidden = true
+            lives -= 1
+        }
+    }
+    
+    private func checkBlockCollision(boundaryID: String) {
+        let blockIDs = [String](blocks.keys)
         
-        gameView.addSubview(ballView)
-        breakoutBehavior.addView(ballView)
+        if blockIDs.contains(boundaryID){
+            score += (5/GameSettings.NumberOfBalls) * 10
+            gameView.breakoutBehavior.removeBlock(boundaryID)
+            blocks[boundaryID]?.isHidden = true
+            blocksLeft -= 1
+        }
+    }
+    
+    func collisionBehavior(_ behavior: UICollisionBehavior, endedContactFor item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?) {
+        
+        if let id = identifier as? String, !endGame {
+            checkBlockCollision(boundaryID: id)  // if block then destroyBoundary
+            checkBallDied(boundaryID: id, ball: item as! BallView)
+            if id.contains("Block") {
+                let velocity = CGPoint(x:CGFloat(arc4random_uniform(60)) - 31.0, y: 100)
+                gameView.breakoutBehavior.changeVelocity(velocity: velocity, view: item as! BallView)
+            }
+        }
         
         
     }
+    
+    func collisionBehavior(_ behavior: UICollisionBehavior, beganContactFor item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?, at p: CGPoint) {
+        
+        // if ball against paddle boundary
+        if balls.values.contains(item as! BallView), let ball = item as? BallView,
+            let id = identifier as? String {
+            if id == "Paddle" {
+                if p.x <= paddle.position.x + (3/7 * paddle.size.width) {
+                    gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: -Int(arc4random_uniform(200)+100),y: -100), view: ball)
+                }else if p.x >= paddle.position.x + (5/7 * paddle.size.width) {
+                    gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)) - 100,y: -100), view: ball)
+                }else{
+                    gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)+100),y: -100), view: ball)
+                }
+            }
+        }
+    }
+    
+    
+    // Mark: - Methods that deal with game logic and setup
+    
+    
+    // Called when no balls/bricks left. Able to start game again.
+    func gameOver(){
+        // Display game over labels
+        scoreLabel.text = String(score*(lives+1))
+        startLabel.text! = "Game Over☄️\tScore: \(scoreLabel.text!)\nTap to play again🎮"
+        startLabel.isHidden = false
+        endGame = true
+    }
+    
+    // Initializes game properties to prepare game to play
+    func prepareGame(){
+        tapCount = 0
+        score = 0
+        lives = GameSettings.NumberOfBalls
+        
+        balls = [String: BallView]()   // removes all views and ids
+        blocks = [String: BlockView]()
+        paddle = PaddleView()
+        
+        makePaddle()
+        makeBalls(GameSettings.NumberOfBalls)
+        makeBlocks(GameSettings.NumberOfBlocks)
+        endGame = false
+    }
+    
+    // Called when screen is tapped when a game ends
+    func resetGame(){
+        for view in gameView.subviews{
+            view.isHidden = true
+        }
+        scoreLabel.isHidden = false
+        highScoreLabel.isHidden = false
+        
+        let collider = gameView.breakoutBehavior.collider
+        for name in collider.boundaryIdentifiers as! [String] {
+            if name.contains("Ball") || name.contains("Paddle") || name.contains("Block"){
+                collider.removeBoundary(withIdentifier: name as NSCopying)
+            }
+        }
+        prepareGame()
+    }
+    
+    // MARK: - Dynamic animator methods
     
     func dynamicAnimatorDidPause(_ animator: UIDynamicAnimator) {
         print("Animation paused")

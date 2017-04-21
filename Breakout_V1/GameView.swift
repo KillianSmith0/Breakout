@@ -11,6 +11,14 @@ import UIKit
 class GameView: UIView {
 
     var bezierPaths = [String: UIBezierPath]()
+    var breakoutBehavior = BreakoutBehavior()
+    lazy var animator: UIDynamicAnimator = {
+        let animator = UIDynamicAnimator(referenceView: self)
+        animator.addBehavior(self.breakoutBehavior)
+        
+        return animator
+    }()
+
     
     func setPath(_ path: UIBezierPath?, named name: String) {
         bezierPaths[name] = path

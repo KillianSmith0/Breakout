@@ -30,7 +30,6 @@ class PaddleView: UIView {
         didSet{
             self.frame.origin.x = position.x
             self.frame.origin.y = position.y
-            print("Paddle pos: \(self.position!)")
         }
     }
 
