@@ -7,3 +7,38 @@
 //
 
 import Foundation
+
+class Settings {
+    
+    static let Instance = Settings() 
+    
+    var PaddleSize: Float = 1.0 {
+        didSet{
+            print("New paddleSize: \(PaddleSize*100)")
+        }
+    }
+    var BlocksPerRow: Int = 4 {
+        didSet{
+            print("New BlocksPR: \(BlocksPerRow)")
+        }
+    }
+    var NumberOfRows: Int = 3 {
+        didSet{
+            print("New # of Rows: \(NumberOfRows)")
+        }
+    }
+    
+    var NumberOfBalls: Int = 2 {
+        didSet{
+            print("New # of balls: \(NumberOfBalls)")
+        }
+    }
+    
+    var BallSpeed: Double = 1.0 {
+        didSet{
+            print("New ballSpeed: \(BallSpeed)")
+        }
+    }
+    
+    
+}

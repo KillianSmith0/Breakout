@@ -15,12 +15,6 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         static let PaddleSize = CGSize(width: 100.0, height: 10.0)
     }
     
-    struct GameSettings {
-        static let NumberOfBlocks: Int = 35
-        static let NumberOfBalls: Int = 2
-        static let BallSpeed: Double = 20.0
-    }
-    
     private var tapCount: Int = 0 {
         didSet{
             if tapCount == 1 {
@@ -33,13 +27,16 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     
     // Game Attributes
     private var highScore: Int = 0 {
-        didSet{ highScoreLabel.text! = String(highScore)}
+        didSet{
+            print("NEW highscore")
+            highScoreLabel.text! = "Highscore: \(highScore)" }
     }
     
     private var score: Int = 0 {
         didSet{
             scoreLabel.text = String(score)
             let oldHighScore = UserDefaults.standard.integer(forKey: "highestScore")
+            print("Old Highscore: \(oldHighScore)")
             if score > oldHighScore {
                 highScore = score
                 UserDefaults.standard.setValue(highScore, forKey: "highestScore")
@@ -48,12 +45,15 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         }
     }
     private var endGame: Bool = false
-    private var blocksLeft: Int = GameSettings.NumberOfBlocks {
-        didSet{ if blocksLeft == 0 { gameOver() }}
+    private var blocksLeft: Int = 0 {
+        didSet{
+            print("blocksLeft: \(blocksLeft)")
+            if blocksLeft == 0 { gameOver() }}
     }
     
-    private var lives: Int = GameSettings.NumberOfBalls {
-        didSet{ if lives == 0 { gameOver() }}
+    private var lives: Int = Settings.Instance.NumberOfBalls {
+        didSet{ print("Lives: \(lives)")
+            if lives == 0 { gameOver() }}
     }
     
     
@@ -63,7 +63,6 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     private var paddle: PaddleView!
     
     // Text Labels
-    
     @IBOutlet weak var highScoreLabel: UILabel!
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet weak var startLabel: UILabel!
@@ -78,12 +77,20 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         prepareGame()
     }
     
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        
+    }
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        resetGame()
+    }
+    
     // Launches the ball after1, if the game has ended, checks before restart
     @IBAction func startGame(_ sender: UITapGestureRecognizer) {
         tapCount += 1
-        
         if endGame == true { // & tapped screen then restart game
-            print("Reset GAME")
+            print("Game Started")
             resetGame()
         }
     }
@@ -111,7 +118,11 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     // MARK: - Methods that create the different type of views
     
     private func makePaddle(){
-        paddle = PaddleView(frame: CGRect(origin: CGPoint(x: gameView.bounds.size.width/2 - Constants.PaddleSize.width/2, y: gameView.bounds.size.height * (3/4)), size: Constants.PaddleSize))
+        paddle = PaddleView()
+        let paddleWidth: CGFloat = 100.0 * CGFloat(Settings.Instance.PaddleSize)
+        let paddleHeight: CGFloat = 15.0
+        
+        paddle = PaddleView(frame: CGRect(origin: CGPoint(x:gameView.bounds.size.width/2 - Constants.PaddleSize.width/2, y: gameView.bounds.size.height * (3/4)), size: CGSize(width: paddleWidth, height: paddleHeight)))
         
         gameView.breakoutBehavior.addBound(view: paddle, name: "Paddle")
         gameView.addSubview(paddle)
@@ -119,15 +130,17 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     
     private func makeBlocks(_ numberOfBlocks: Int){
         let spacing: CGFloat = 2.0
-        let totalSpacing: CGFloat = spacing * 5 + 2
-        let blockWidth: CGFloat = (gameView.bounds.width-totalSpacing)/5
+        let totalSpacing: CGFloat = spacing * (CGFloat(Settings.Instance.BlocksPerRow)+1)
+        
+        let blockWidth: CGFloat = (gameView.bounds.width-totalSpacing)/CGFloat(Settings.Instance.BlocksPerRow)
         let xSpacing: CGFloat = blockWidth + spacing
-        
-        let blockHeight: CGFloat = 20.0
+        let blockHeight: CGFloat = blockWidth/3
         let ySpacing: CGFloat = blockHeight + 2.0
+        // empties array
+        blocks = [String: BlockView]()
         
-        for i in 1..<numberOfBlocks/5{
-            for j in 0...4{
+        for i in 1...Settings.Instance.NumberOfRows {
+            for j in 0...Settings.Instance.BlocksPerRow{
                 let y: CGFloat = spacing + (ySpacing * CGFloat(i))
                 let x: CGFloat = spacing + (xSpacing * CGFloat(j))
                 let block = BlockView(frame: CGRect(origin: CGPoint(x: x, y: y), size: CGSize(width: blockWidth, height: blockHeight)))
@@ -142,8 +155,9 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     }
     
     private func makeBalls(_ numberOfBalls: Int){
+        balls = [String: BallView]()   // removes all views and ids
         for i in 0..<numberOfBalls {
-            let ballX: CGFloat = paddle.position.x + (Constants.BallSize.width/4) + (paddle.size.width * (CGFloat(i)/CGFloat(GameSettings.NumberOfBalls)))
+            let ballX: CGFloat = paddle.position.x + (Constants.BallSize.width/4) + (paddle.size.width * (CGFloat(i)/CGFloat(Settings.Instance.NumberOfBalls)))
             let ballY: CGFloat = paddle.position.y - Constants.BallSize.height
             let ballID: String = "Ball\(i)"
             let ball = BallView(frame: CGRect(origin: CGPoint(x: ballX, y: ballY), size: Constants.BallSize))
@@ -156,7 +170,7 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     
     // MARK: - Methods that deal with collision checks
     
-    private func checkBallDied (boundaryID: String, ball: BallView) {
+    private func checkFloorCollision(boundaryID: String, ball: UIView) {
         if boundaryID == "Floor" {
             gameView.breakoutBehavior.removeView(ball)
             ball.isHidden = true
@@ -164,11 +178,13 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         }
     }
     
-    private func checkBlockCollision(boundaryID: String) {
+    private func checkBlockCollision(boundaryID: String, ball: UIView) {
         let blockIDs = [String](blocks.keys)
         
         if blockIDs.contains(boundaryID){
-            score += (5/GameSettings.NumberOfBalls) * 10
+            // Bounce ball back
+            score += (5/Settings.Instance.NumberOfBalls) * 10
+            // Destroy block
             gameView.breakoutBehavior.removeBlock(boundaryID)
             blocks[boundaryID]?.isHidden = true
             blocksLeft -= 1
@@ -176,84 +192,75 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     }
     
     func collisionBehavior(_ behavior: UICollisionBehavior, endedContactFor item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?) {
-        
         if let id = identifier as? String, !endGame {
-            checkBlockCollision(boundaryID: id)  // if block then destroyBoundary
-            checkBallDied(boundaryID: id, ball: item as! BallView)
-            if id.contains("Block") {
-                let velocity = CGPoint(x:CGFloat(arc4random_uniform(60)) - 31.0, y: 100)
-                gameView.breakoutBehavior.changeVelocity(velocity: velocity, view: item as! BallView)
-            }
+            checkBlockCollision(boundaryID: id, ball: item as! UIView)  // if block destroyBoundary
+            checkFloorCollision(boundaryID: id, ball: item as! UIView)
         }
-        
-        
     }
     
+    // For paddle collision, need point p to decide which direction to send ball
     func collisionBehavior(_ behavior: UICollisionBehavior, beganContactFor item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?, at p: CGPoint) {
         
         // if ball against paddle boundary
         if balls.values.contains(item as! BallView), let ball = item as? BallView,
-            let id = identifier as? String {
-            if id == "Paddle" {
-                if p.x <= paddle.position.x + (3/7 * paddle.size.width) {
-                    gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: -Int(arc4random_uniform(200)+100),y: -100), view: ball)
-                }else if p.x >= paddle.position.x + (5/7 * paddle.size.width) {
-                    gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)) - 100,y: -100), view: ball)
-                }else{
-                    gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)+100),y: -100), view: ball)
-                }
+            let id = identifier as? String, id == "Paddle" {
+            if p.x <= (paddle.position.x + (3/7 * paddle.size.width)) {   //LHS
+                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: -Int(arc4random_uniform(200)+100),y: 0), view: ball)
+            }
+            if p.x >= (paddle.position.x + (5/7 * paddle.size.width)) {
+                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)) - 100,y: 0), view: ball)
+            }else{
+                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)+100),y: 0), view: ball)
             }
         }
     }
     
     
-    // Mark: - Methods that deal with game logic and setup
-    
+    // MARK: - Methods that deal with game logic and setup
     
     // Called when no balls/bricks left. Able to start game again.
-    func gameOver(){
+    private func gameOver(){
         // Display game over labels
-        scoreLabel.text = String(score*(lives+1))
-        startLabel.text! = "Game Over☄️\tScore: \(scoreLabel.text!)\nTap to play again🎮"
+        print("GameOver")
+        let finalScore = score*(lives+1)
+        scoreLabel.text = "Score: \(finalScore)"
+        startLabel.text! = "Game Over☄️\tScore: \(finalScore)\nTap to play again🎮"
         startLabel.isHidden = false
         endGame = true
     }
     
     // Initializes game properties to prepare game to play
-    func prepareGame(){
+    private func prepareGame(){
+        // Initialize gameProperties
+        print("Preparing for new game")
         tapCount = 0
         score = 0
-        lives = GameSettings.NumberOfBalls
+        lives = Settings.Instance.NumberOfBalls
+        blocksLeft = Settings.Instance.BlocksPerRow * Settings.Instance.NumberOfRows
         
-        balls = [String: BallView]()   // removes all views and ids
-        blocks = [String: BlockView]()
-        paddle = PaddleView()
         
-        makePaddle()
-        makeBalls(GameSettings.NumberOfBalls)
-        makeBlocks(GameSettings.NumberOfBlocks)
+        scoreLabel.isHidden = false
+        highScoreLabel.isHidden = false
+        
+        gameView.breakoutBehavior.addWalls()
+        makePaddle()    // clears and recreates PaddleView
+        makeBalls(lives)
+        makeBlocks(blocksLeft)
         endGame = false
     }
     
     // Called when screen is tapped when a game ends
-    func resetGame(){
+    private func resetGame(){
+        print("Screen tap after loss, NewGame.")
+        
         for view in gameView.subviews{
             view.isHidden = true
         }
-        scoreLabel.isHidden = false
-        highScoreLabel.isHidden = false
-        
-        let collider = gameView.breakoutBehavior.collider
-        for name in collider.boundaryIdentifiers as! [String] {
-            if name.contains("Ball") || name.contains("Paddle") || name.contains("Block"){
-                collider.removeBoundary(withIdentifier: name as NSCopying)
-            }
-        }
+        gameView.breakoutBehavior.removeAll()
         prepareGame()
     }
     
     // MARK: - Dynamic animator methods
-    
     func dynamicAnimatorDidPause(_ animator: UIDynamicAnimator) {
         print("Animation paused")
     }
