@@ -13,7 +13,7 @@ class PaddleView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         self.size = frame.size
-        backgroundColor = UIColor.cyan
+        backgroundColor = Settings.Instance.PaddleColor
         layer.borderColor = UIColor.black.cgColor
         layer.borderWidth = 0.5
         layer.cornerRadius = frame.size.height / 2.0

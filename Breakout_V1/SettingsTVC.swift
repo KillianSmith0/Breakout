@@ -14,43 +14,49 @@ class SettingsTVC: UITableViewController {
         super.viewDidLoad()
     }
     
-    @IBOutlet weak var bricksPRLabel: UILabel!
-    @IBOutlet weak var rowsLabel: UILabel!
-    
-    @IBOutlet weak var paddleSizeSlider: UISlider!
-    @IBOutlet weak var numOfBallsSTepper: UISegmentedControl!
-    @IBOutlet weak var ballSpeedSlider: UISlider!
-    @IBOutlet weak var bricksPerRowStepper: UIStepper!
-    @IBOutlet weak var rowStepper: UIStepper!
-    
-    
-    
-    
     @IBAction func changePaddleSize(_ sender: UISlider) {
         Settings.Instance.PaddleSize = sender.value
     }
     
+    @IBAction func changePaddleColorSegment(_ sender: UISegmentedControl) {
+        let colorIndex = sender.selectedSegmentIndex
+        let color: UIColor!
+        if colorIndex == 0 {
+            color = UIColor.cyan
+        }else if colorIndex == 1 {
+            color = UIColor.green
+        }else{
+            color = UIColor.red
+        }
+        Settings.Instance.PaddleColor = color
+    }
+    
+    @IBOutlet weak var numOfBallsStepper: UISegmentedControl!
     @IBAction func changeBallsPerGame(_ sender: UISegmentedControl) {
-        Settings.Instance.NumberOfBalls = Int(numOfBallsSTepper.titleForSegment(at: numOfBallsSTepper.selectedSegmentIndex)!)!
+        Settings.Instance.NumberOfBalls = Int(numOfBallsStepper.titleForSegment(at: numOfBallsStepper.selectedSegmentIndex)!)!
     }
     
     @IBAction func changeBallSpeed(_ sender: UISlider) {
         Settings.Instance.BallSpeed = Double(sender.value)
     }
-  
     
+    @IBOutlet weak var bricksPRLabel: UILabel!
     @IBAction func changeBricksPerRow(_ sender: UIStepper) {
         Settings.Instance.BlocksPerRow = Int(sender.value)
         bricksPRLabel.text! = "Bricks Per Row: \(Settings.Instance.BlocksPerRow)"
 
     }
-
+    
+    @IBOutlet weak var rowsLabel: UILabel!
     @IBAction func changeRows(_ sender: UIStepper) {
         Settings.Instance.NumberOfRows = Int(sender.value)
         rowsLabel.text = "Rows: \(Settings.Instance.NumberOfRows)"
         
     }
     
+    @IBAction func resetHighScoreButton(_ sender: UIButton) {
+        UserDefaults.standard.setValue(0, forKey: "highestScore")
+    }
     // MARK: - Table view data source
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -60,6 +66,6 @@ class SettingsTVC: UITableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return 6
+        return 8
     }
 }

@@ -18,25 +18,24 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     private var tapCount: Int = 0 {
         didSet{
             if tapCount == 1 {
-                gameView.breakoutBehavior.shootBalls([BallView](balls.values))
                 startLabel.isHidden = true
                 endGame = false
+                gameView.breakoutBehavior.shootBalls([BallView](balls.values))
             }
         }
     }
     
     // Game Attributes
-    private var highScore: Int = 0 {
+    private var highScore: Int = UserDefaults.standard.integer(forKey: "highestScore"){
         didSet{
             print("NEW highscore")
             highScoreLabel.text! = "Highscore: \(highScore)" }
     }
     
-    private var score: Int = 0 {
+    private var score: Int = 0{
         didSet{
-            scoreLabel.text = String(score)
+            scoreLabel.text = "Score: \(score)"
             let oldHighScore = UserDefaults.standard.integer(forKey: "highestScore")
-            print("Old Highscore: \(oldHighScore)")
             if score > oldHighScore {
                 highScore = score
                 UserDefaults.standard.setValue(highScore, forKey: "highestScore")
@@ -45,15 +44,13 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         }
     }
     private var endGame: Bool = false
+   
     private var blocksLeft: Int = 0 {
-        didSet{
-            print("blocksLeft: \(blocksLeft)")
-            if blocksLeft == 0 { gameOver() }}
+        didSet{ if blocksLeft == 0 { gameOver() }}
     }
     
     private var lives: Int = Settings.Instance.NumberOfBalls {
-        didSet{ print("Lives: \(lives)")
-            if lives == 0 { gameOver() }}
+        didSet{ if lives == 0 { gameOver() }}
     }
     
     
@@ -63,6 +60,7 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     private var paddle: PaddleView!
     
     // Text Labels
+    @IBOutlet weak var scoresStackView: UIStackView!
     @IBOutlet weak var highScoreLabel: UILabel!
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet weak var startLabel: UILabel!
@@ -86,7 +84,10 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         resetGame()
     }
     
-    // Launches the ball after1, if the game has ended, checks before restart
+    
+    // MARK: - Gesture Recognizer actions
+    
+    // Launches the ball after (see tapCount), if the game has ended it checks before restart
     @IBAction func startGame(_ sender: UITapGestureRecognizer) {
         tapCount += 1
         if endGame == true { // & tapped screen then restart game
@@ -95,7 +96,7 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         }
     }
     
-    
+    // Pan Gesuture
     @IBAction func movePaddle(_ sender: UIPanGestureRecognizer) {
         if(sender.state == .began || sender.state == .changed) {
             let translation = sender.translation(in: self.paddle)
@@ -122,7 +123,9 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         let paddleWidth: CGFloat = 100.0 * CGFloat(Settings.Instance.PaddleSize)
         let paddleHeight: CGFloat = 15.0
         
-        paddle = PaddleView(frame: CGRect(origin: CGPoint(x:gameView.bounds.size.width/2 - Constants.PaddleSize.width/2, y: gameView.bounds.size.height * (3/4)), size: CGSize(width: paddleWidth, height: paddleHeight)))
+        let paddleStartXY = CGPoint(x: gameView.bounds.size.width/2 - Constants.PaddleSize.width/2,y:gameView.bounds.size.height * (3/4))
+        
+        paddle = PaddleView(frame: CGRect(origin: paddleStartXY, size: CGSize(width: paddleWidth, height: paddleHeight)))
         
         gameView.breakoutBehavior.addBound(view: paddle, name: "Paddle")
         gameView.addSubview(paddle)
@@ -162,7 +165,6 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
             let ballID: String = "Ball\(i)"
             let ball = BallView(frame: CGRect(origin: CGPoint(x: ballX, y: ballY), size: Constants.BallSize))
             balls[ballID] = ball
-            
             gameView.addSubview(ball)
         }
     }
@@ -183,7 +185,8 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         
         if blockIDs.contains(boundaryID){
             // Bounce ball back
-            score += (5/Settings.Instance.NumberOfBalls) * 10
+            
+            score += (5/lives) * 10
             // Destroy block
             gameView.breakoutBehavior.removeBlock(boundaryID)
             blocks[boundaryID]?.isHidden = true
@@ -191,10 +194,16 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         }
     }
     
-    func collisionBehavior(_ behavior: UICollisionBehavior, endedContactFor item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?) {
-        if let id = identifier as? String, !endGame {
-            checkBlockCollision(boundaryID: id, ball: item as! UIView)  // if block destroyBoundary
-            checkFloorCollision(boundaryID: id, ball: item as! UIView)
+    private func checkPaddleCollision(boundaryID: String, ball: BallView, at p: CGPoint) {
+        if boundaryID.contains("Paddle"){
+            if p.x <= (paddle.position.x + (3/7 * paddle.size.width)) {   //LHS
+                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: -Int(arc4random_uniform(200)+100),y: 50), view: ball)
+            }
+            if p.x >= (paddle.position.x + (5/7 * paddle.size.width)) {
+                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)) - 100,y: 50), view: ball)
+            }else{
+                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(100))-50,y: 50), view: ball)
+            }
         }
     }
     
@@ -203,15 +212,10 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         
         // if ball against paddle boundary
         if balls.values.contains(item as! BallView), let ball = item as? BallView,
-            let id = identifier as? String, id == "Paddle" {
-            if p.x <= (paddle.position.x + (3/7 * paddle.size.width)) {   //LHS
-                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: -Int(arc4random_uniform(200)+100),y: 0), view: ball)
-            }
-            if p.x >= (paddle.position.x + (5/7 * paddle.size.width)) {
-                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)) - 100,y: 0), view: ball)
-            }else{
-                gameView.breakoutBehavior.changeVelocity(velocity: CGPoint(x: Int(arc4random_uniform(200)+100),y: 0), view: ball)
-            }
+            let id = identifier as? String {
+                checkPaddleCollision(boundaryID: id, ball: ball, at: p)
+                checkBlockCollision(boundaryID: id, ball: item as! UIView)  // if block destroyBoundary
+                checkFloorCollision(boundaryID: id, ball: item as! UIView)
         }
     }
     
@@ -233,20 +237,19 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
     private func prepareGame(){
         // Initialize gameProperties
         print("Preparing for new game")
+        endGame = false
         tapCount = 0
         score = 0
         lives = Settings.Instance.NumberOfBalls
         blocksLeft = Settings.Instance.BlocksPerRow * Settings.Instance.NumberOfRows
         
-        
-        scoreLabel.isHidden = false
-        highScoreLabel.isHidden = false
+        highScoreLabel.text = "Highscore: \(highScore)"
+        scoresStackView.isHidden = false
         
         gameView.breakoutBehavior.addWalls()
-        makePaddle()    // clears and recreates PaddleView
+        makePaddle()
         makeBalls(lives)
         makeBlocks(blocksLeft)
-        endGame = false
     }
     
     // Called when screen is tapped when a game ends
@@ -276,4 +279,3 @@ extension UIColor {
         return UIColor(hue: randomHue, saturation: 1.0, brightness: 1.0, alpha: 0.5)
     }
 }
-

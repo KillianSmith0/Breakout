@@ -1,0 +1,3 @@
+if (self.CavalryLogger) { CavalryLogger.start_js(["F52QX"]); }
+
+__d('ServiceWorkerProfilerTypes',['Map','TimingAnnotations'],(function a(b,c,d,e,f,g){var h={START:'start',PARSED:'parsed',INITIALIZED:'init',FIRST_EVENT:'firstEvent'},i={FETCH_START:'start',ROUTE_CONFIG_CACHE_LOOKUP_START:'routeLookupStart',ROUTE_CONFIG_CACHE_LOOKUP_END:'routeLookupEnd',BEGIN_RESPONSE:'beginResponse',CACHE_FLUSH:'cacheFlush',NETWORK_REQUEST_START:'requestStart',NETWORK_RESPONSE_START:'responseStart',NETWORK_RESPONSE_END:'responseEnd',FETCH_END:'end'};f.exports={WorkerTiming:h,FetchTiming:i};}),null);

@@ -7,10 +7,17 @@
 //
 
 import Foundation
+import UIKit
 
 class Settings {
     
     static let Instance = Settings() 
+    
+    var PaddleColor: UIColor = UIColor.cyan {
+        didSet{
+            print("New paddleColor: \(PaddleColor)")
+        }
+    }
     
     var PaddleSize: Float = 1.0 {
         didSet{
@@ -39,6 +46,5 @@ class Settings {
             print("New ballSpeed: \(BallSpeed)")
         }
     }
-    
     
 }
