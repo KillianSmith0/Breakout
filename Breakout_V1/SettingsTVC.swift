@@ -19,16 +19,14 @@ class SettingsTVC: UITableViewController {
     }
     
     @IBAction func changePaddleColorSegment(_ sender: UISegmentedControl) {
-        let colorIndex = sender.selectedSegmentIndex
-        let color: UIColor!
-        if colorIndex == 0 {
-            color = UIColor.cyan
-        }else if colorIndex == 1 {
-            color = UIColor.green
-        }else{
-            color = UIColor.red
+        switch sender.selectedSegmentIndex {
+        case 0:
+            Settings.Instance.PaddleColor = .cyan
+        case 1:
+            Settings.Instance.PaddleColor = .green
+        default:
+            Settings.Instance.PaddleColor = .red
         }
-        Settings.Instance.PaddleColor = color
     }
     
     @IBOutlet weak var numOfBallsStepper: UISegmentedControl!
@@ -51,14 +49,13 @@ class SettingsTVC: UITableViewController {
     @IBAction func changeRows(_ sender: UIStepper) {
         Settings.Instance.NumberOfRows = Int(sender.value)
         rowsLabel.text = "Rows: \(Settings.Instance.NumberOfRows)"
-        
     }
     
     @IBAction func resetHighScoreButton(_ sender: UIButton) {
         UserDefaults.standard.setValue(0, forKey: "highestScore")
     }
+    
     // MARK: - Table view data source
-
     override func numberOfSections(in tableView: UITableView) -> Int {
         // #warning Incomplete implementation, return the number of sections
         return 1

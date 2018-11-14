@@ -228,7 +228,7 @@ class BreakoutVC: UIViewController, UIDynamicAnimatorDelegate, UICollisionBehavi
         print("GameOver")
         let finalScore = score*(lives+1)
         scoreLabel.text = "Score: \(finalScore)"
-        startLabel.text! = "Game Over☄️\tScore: \(finalScore)\nTap to play again🎮"
+        startLabel.text = "Game Over☄️\tScore: \(finalScore)\nTap to play again🎮"
         startLabel.isHidden = false
         endGame = true
     }
